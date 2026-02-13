@@ -1,0 +1,405 @@
+/* ============================================
+   ガチャカウンター - スタイルシート
+   OBS ブラウザソース対応 (透明背景)
+   ============================================ */
+
+/* --- リセット & ベース --- */
+*, *::before, *::after {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  background: transparent;
+  font-family: "Segoe UI", "Hiragino Kaku Gothic ProN", "Noto Sans JP", "Meiryo", sans-serif;
+  color: #f0f0f0;
+  min-height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  padding: 12px;
+}
+
+/* --- コンテナ --- */
+.container {
+  position: relative;
+  background: rgba(15, 15, 25, 0.85);
+  border: 1px solid rgba(100, 120, 255, 0.3);
+  border-radius: 12px;
+  padding: 20px 24px;
+  width: 380px;
+  box-shadow: 0 0 20px rgba(80, 100, 255, 0.15);
+}
+
+/* --- タイトル --- */
+.title {
+  text-align: center;
+  margin-bottom: 16px;
+  border-bottom: 1px solid rgba(100, 120, 255, 0.25);
+  padding-bottom: 10px;
+}
+
+.char-name-input {
+  display: block;
+  width: 100%;
+  min-height: 1.4em;
+  background: transparent;
+  border: 1px solid rgba(100, 120, 255, 0.2);
+  border-radius: 6px;
+  padding: 6px 10px;
+  font-size: 18px;
+  font-weight: 700;
+  color: #ffffff;
+  text-align: center;
+  font-family: inherit;
+  letter-spacing: 0.08em;
+  margin-bottom: 4px;
+  cursor: text;
+  word-break: break-all;
+}
+
+.char-name-input:empty::before {
+  content: attr(data-placeholder);
+  color: #667088;
+  font-weight: 400;
+  pointer-events: none;
+}
+
+.char-name-input:focus {
+  outline: none;
+  border-color: rgba(100, 140, 255, 0.5);
+}
+
+.title-sub {
+  font-size: 12px;
+  color: #8890aa;
+  letter-spacing: 0.15em;
+}
+
+/* --- メインカウンター --- */
+.counter-section {
+  text-align: center;
+  margin-bottom: 16px;
+}
+
+.main-counter {
+  display: flex;
+  align-items: baseline;
+  justify-content: center;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.counter-label {
+  font-size: 16px;
+  color: #b0b8d0;
+}
+
+.counter-value {
+  font-size: 56px;
+  font-weight: 800;
+  color: #ffffff;
+  text-shadow: 0 0 12px rgba(100, 140, 255, 0.6);
+  line-height: 1;
+  transition: transform 0.1s ease;
+}
+
+.counter-unit {
+  font-size: 18px;
+  color: #b0b8d0;
+}
+
+/* カウント変動アニメーション */
+.counter-value.pulse {
+  animation: counterPulse 0.3s ease;
+}
+
+@keyframes counterPulse {
+  0%   { transform: scale(1); }
+  40%  { transform: scale(1.15); color: #70cfff; }
+  100% { transform: scale(1); }
+}
+
+/* --- サブカウンター --- */
+.sub-counters {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.sub-counter {
+  display: flex;
+  align-items: baseline;
+  justify-content: center;
+  gap: 4px;
+  font-size: 14px;
+}
+
+.sub-label {
+  color: #b0b8d0;
+}
+
+.sub-value {
+  font-size: 20px;
+  font-weight: 700;
+  color: #e0e0e0;
+}
+
+.sub-unit {
+  color: #98a0b8;
+  font-size: 13px;
+}
+
+.total-counter .sub-value {
+  color: #70cfff;
+}
+
+.pity-counter .sub-value {
+  color: #ffb060;
+}
+
+/* 天井到達時の警告色 */
+.pity-counter.pity-near .sub-value {
+  color: #ff6060;
+  text-shadow: 0 0 8px rgba(255, 80, 80, 0.5);
+}
+
+/* --- 獲得履歴 --- */
+.history-section {
+  margin-bottom: 16px;
+  border-top: 1px solid rgba(100, 120, 255, 0.15);
+  padding-top: 12px;
+}
+
+.history-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: #b0b8d0;
+  margin-bottom: 8px;
+  text-align: center;
+  letter-spacing: 0.1em;
+}
+
+.history-list {
+  max-height: 160px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.history-list::-webkit-scrollbar {
+  width: 4px;
+}
+
+.history-list::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 2px;
+}
+
+.history-list::-webkit-scrollbar-thumb {
+  background: rgba(100, 120, 255, 0.3);
+  border-radius: 2px;
+}
+
+.history-empty {
+  text-align: center;
+  color: #555;
+  font-size: 13px;
+  padding: 8px 0;
+}
+
+.history-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 4px 10px;
+  background: rgba(255, 255, 255, 0.04);
+  border-radius: 6px;
+  font-size: 13px;
+}
+
+.history-item-id {
+  color: #a0b0ff;
+  font-weight: 700;
+  min-width: 48px;
+}
+
+.history-item-total {
+  color: #e0e0e0;
+  font-weight: 600;
+}
+
+.history-item-diff {
+  color: #98a0b8;
+  font-size: 12px;
+}
+
+/* 獲得時アニメーション */
+.history-item.flash {
+  animation: getFlash 0.6s ease;
+}
+
+@keyframes getFlash {
+  0%   { background: rgba(255, 200, 60, 0.5); transform: scale(1.03); }
+  100% { background: rgba(255, 255, 255, 0.04); transform: scale(1); }
+}
+
+/* 獲得時の全体エフェクト */
+.container.get-effect {
+  animation: getGlow 0.6s ease;
+}
+
+@keyframes getGlow {
+  0%   { box-shadow: 0 0 20px rgba(80, 100, 255, 0.15); }
+  30%  { box-shadow: 0 0 40px rgba(255, 200, 60, 0.5), 0 0 80px rgba(255, 180, 40, 0.2); }
+  100% { box-shadow: 0 0 20px rgba(80, 100, 255, 0.15); }
+}
+
+/* --- 操作ボタン --- */
+.controls-section {
+  border-top: 1px solid rgba(100, 120, 255, 0.15);
+  padding-top: 12px;
+  margin-bottom: 10px;
+}
+
+.button-row {
+  display: flex;
+  justify-content: center;
+  gap: 6px;
+  margin-bottom: 8px;
+}
+
+.btn {
+  border: none;
+  border-radius: 8px;
+  padding: 8px 14px;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: transform 0.1s ease, filter 0.1s ease;
+  font-family: inherit;
+}
+
+.btn:hover {
+  filter: brightness(1.15);
+  transform: translateY(-1px);
+}
+
+.btn:active {
+  transform: translateY(1px) scale(0.97);
+}
+
+.btn-pull {
+  background: #3050a0;
+  color: #e0e8ff;
+}
+
+.btn-get {
+  background: #d4a020;
+  color: #1a1a10;
+}
+
+.btn-undo {
+  background: #404858;
+  color: #b0b8cc;
+}
+
+.btn-reset {
+  background: #802030;
+  color: #ffc0c0;
+  font-size: 12px;
+  padding: 6px 20px;
+}
+
+/* --- 天井設定 --- */
+.setting-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  margin-top: 4px;
+}
+
+.setting-label {
+  font-size: 13px;
+  color: #b0b8d0;
+}
+
+.setting-input {
+  width: 70px;
+  padding: 4px 8px;
+  border: 1px solid rgba(100, 120, 255, 0.3);
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.08);
+  color: #e0e0e0;
+  font-size: 14px;
+  text-align: center;
+  font-family: inherit;
+}
+
+.setting-input:focus {
+  outline: none;
+  border-color: rgba(100, 140, 255, 0.6);
+}
+
+.setting-unit {
+  font-size: 13px;
+  color: #98a0b8;
+}
+
+/* --- ショートカット説明 --- */
+.shortcut-section {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 6px 12px;
+  padding-top: 8px;
+  border-top: 1px solid rgba(100, 120, 255, 0.1);
+}
+
+.shortcut-item {
+  font-size: 11px;
+  color: #8890a8;
+  letter-spacing: 0.03em;
+}
+
+/* --- リセット確認ダイアログ --- */
+.confirm-overlay {
+  display: none;
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.6);
+  border-radius: 12px;
+  justify-content: center;
+  align-items: center;
+  z-index: 100;
+}
+
+.confirm-overlay.show {
+  display: flex;
+}
+
+.confirm-dialog {
+  background: rgba(30, 30, 50, 0.95);
+  border: 1px solid rgba(255, 80, 80, 0.4);
+  border-radius: 10px;
+  padding: 20px 24px;
+  text-align: center;
+}
+
+.confirm-message {
+  font-size: 15px;
+  color: #e0e0e0;
+  margin-bottom: 16px;
+}
+
+.confirm-buttons {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+}

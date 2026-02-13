@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ガチャカウンター</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <div class="container">
+    <!-- タイトル -->
+    <div class="title">
+      <div class="char-name-input" id="charNameInput" contenteditable="true" data-placeholder="キャラクター名を入力"></div>
+      <span class="title-sub">ガチャカウンター</span>
+    </div>
+
+    <!-- メインカウンター -->
+    <div class="counter-section">
+      <div class="main-counter">
+        <span class="counter-label">現在</span>
+        <span class="counter-value" id="currentStreak">0</span>
+        <span class="counter-unit">回</span>
+      </div>
+
+      <div class="sub-counters">
+        <div class="sub-counter total-counter">
+          <span class="sub-label">総回数</span>
+          <span class="sub-value" id="totalCount">0</span>
+          <span class="sub-unit">回</span>
+        </div>
+        <div class="sub-counter pity-counter">
+          <span class="sub-label">天井まで</span>
+          <span class="sub-value" id="pityRemain">200</span>
+          <span class="sub-unit">回 /</span>
+          <span class="sub-value" id="pityLimitDisplay">200</span>
+          <span class="sub-unit">回</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- 獲得履歴 -->
+    <div class="history-section">
+      <h2 class="history-title">獲得履歴</h2>
+      <div class="history-list" id="historyList">
+        <p class="history-empty">まだ獲得記録がありません</p>
+      </div>
+    </div>
+
+    <!-- 操作ボタン -->
+    <div class="controls-section">
+      <div class="button-row">
+        <button class="btn btn-pull" id="btnPull1" data-amount="1">+1</button>
+        <button class="btn btn-pull" id="btnPull10" data-amount="10">+10</button>
+        <button class="btn btn-pull" id="btnPull11" data-amount="11">+11</button>
+        <button class="btn btn-get" id="btnGet">獲得!</button>
+        <button class="btn btn-undo" id="btnUndo">戻す</button>
+      </div>
+      <div class="button-row">
+        <button class="btn btn-reset" id="btnReset">リセット</button>
+      </div>
+
+      <!-- 天井設定 -->
+      <div class="setting-row">
+        <label class="setting-label" for="pityInput">天井:</label>
+        <input class="setting-input" type="number" id="pityInput" value="200" min="1" max="9999">
+        <span class="setting-unit">回</span>
+      </div>
+    </div>
+
+    <!-- ショートカット説明 -->
+    <div class="shortcut-section">
+      <span class="shortcut-item">1:+1</span>
+      <span class="shortcut-item">2:+10</span>
+      <span class="shortcut-item">3:+11</span>
+      <span class="shortcut-item">Space:獲得</span>
+      <span class="shortcut-item">Z:戻す</span>
+      <span class="shortcut-item">R:リセット</span>
+    </div>
+
+    <!-- リセット確認ダイアログ -->
+    <div class="confirm-overlay" id="confirmOverlay">
+      <div class="confirm-dialog">
+        <p class="confirm-message">全てのデータをリセットしますか？</p>
+        <div class="confirm-buttons">
+          <button class="btn btn-reset" id="confirmYes">リセットする</button>
+          <button class="btn btn-undo" id="confirmNo">キャンセル</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="js/app.js"></script>
+</body>
+</html>
