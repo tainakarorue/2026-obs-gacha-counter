@@ -151,8 +151,50 @@ body {
   font-size: 13px;
 }
 
+.total-left, .total-right {
+  display: flex;
+  align-items: baseline;
+  gap: 4px;
+}
+
 .total-counter .sub-value {
   color: #70cfff;
+}
+
+.credit-input {
+  width: 56px;
+  padding: 2px 4px;
+  border: 1px solid rgba(100, 120, 255, 0.25);
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.08);
+  color: #e0e0e0;
+  font-size: 13px;
+  text-align: center;
+  font-family: inherit;
+  -moz-appearance: textfield;
+}
+
+.credit-input::-webkit-outer-spin-button,
+.credit-input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.credit-input:focus {
+  outline: none;
+  border-color: rgba(100, 140, 255, 0.5);
+}
+
+.credit-counter {
+  display: none;
+}
+
+.credit-counter.show {
+  display: flex;
+}
+
+.credit-counter .sub-value {
+  color: #ff90d0;
 }
 
 .pity-counter .sub-value {
@@ -232,6 +274,50 @@ body {
 }
 
 .history-item-diff {
+  color: #98a0b8;
+  font-size: 12px;
+}
+
+/* --- 獲得サマリー --- */
+.history-summary {
+  margin-top: 10px;
+  padding: 8px 12px;
+  background: rgba(100, 120, 255, 0.08);
+  border-radius: 6px;
+  border: 1px solid rgba(100, 120, 255, 0.15);
+}
+
+.history-summary:empty {
+  display: none;
+}
+
+.history-summary-title {
+  font-size: 12px;
+  color: #8890aa;
+  text-align: center;
+  margin-bottom: 6px;
+  letter-spacing: 0.1em;
+}
+
+.summary-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 2px 4px;
+  font-size: 13px;
+}
+
+.summary-item-name {
+  color: #a0b0ff;
+  font-weight: 600;
+}
+
+.summary-item-count {
+  color: #70cfff;
+  font-weight: 700;
+}
+
+.summary-item-pulls {
   color: #98a0b8;
   font-size: 12px;
 }
@@ -337,6 +423,36 @@ body {
   font-size: 14px;
   text-align: center;
   font-family: inherit;
+  -moz-appearance: textfield;
+}
+
+.setting-input::-webkit-outer-spin-button,
+.setting-input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.btn-pity-adjust {
+  border: none;
+  border-radius: 6px;
+  padding: 6px 10px;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  background: rgba(100, 120, 255, 0.15);
+  color: #b0b8d0;
+  font-family: inherit;
+  transition: background 0.15s ease, transform 0.1s ease;
+  min-width: 36px;
+}
+
+.btn-pity-adjust:hover {
+  background: rgba(100, 120, 255, 0.3);
+  color: #e0e8ff;
+}
+
+.btn-pity-adjust:active {
+  transform: scale(0.95);
 }
 
 .setting-input:focus {
