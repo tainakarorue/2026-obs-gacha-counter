@@ -24,9 +24,20 @@
 
       <div class="sub-counters">
         <div class="sub-counter total-counter">
-          <span class="sub-label">総回数</span>
-          <span class="sub-value" id="totalCount">0</span>
-          <span class="sub-unit">回</span>
+          <div class="total-left">
+            <span class="sub-label">総回数</span>
+            <span class="sub-value" id="totalCount">0</span>
+            <span class="sub-unit">回</span>
+          </div>
+          <span class="sub-unit">×</span>
+          <div class="total-right">
+            <span class="sub-unit">1連</span>
+            <input class="credit-input" type="number" id="creditInput" value="0" min="0" max="99999">
+          </div>
+        </div>
+        <div class="sub-counter credit-counter" id="creditRow">
+          <span class="sub-label">消費</span>
+          <span class="sub-value" id="totalCredit">0</span>
         </div>
         <div class="sub-counter pity-counter">
           <span class="sub-label">天井まで</span>
@@ -44,6 +55,7 @@
       <div class="history-list" id="historyList">
         <p class="history-empty">まだ獲得記録がありません</p>
       </div>
+      <div class="history-summary" id="historySummary"></div>
     </div>
 
     <!-- 操作ボタン -->
@@ -62,7 +74,11 @@
       <!-- 天井設定 -->
       <div class="setting-row">
         <label class="setting-label" for="pityInput">天井:</label>
+        <button class="btn-pity-adjust" id="pityMinus10">-10</button>
+        <button class="btn-pity-adjust" id="pityMinus1">-1</button>
         <input class="setting-input" type="number" id="pityInput" value="200" min="1" max="9999">
+        <button class="btn-pity-adjust" id="pityPlus1">+1</button>
+        <button class="btn-pity-adjust" id="pityPlus10">+10</button>
         <span class="setting-unit">回</span>
       </div>
     </div>

@@ -11,7 +11,11 @@ const dom = {
   pityRemain:       document.getElementById('pityRemain'),
   pityLimitDisplay: document.getElementById('pityLimitDisplay'),
   currentStreak:    document.getElementById('currentStreak'),
+  creditInput:      document.getElementById('creditInput'),
+  totalCredit:      document.getElementById('totalCredit'),
+  creditRow:        document.getElementById('creditRow'),
   historyList:      document.getElementById('historyList'),
+  historySummary:   document.getElementById('historySummary'),
   pityInput:        document.getElementById('pityInput'),
   btnPull1:         document.getElementById('btnPull1'),
   btnPull10:        document.getElementById('btnPull10'),
@@ -27,10 +31,14 @@ const dom = {
   pityCounter:      document.querySelector('.pity-counter'),
 };
 
+// --- フラグ ---
+let flashLatest = false;
+
 // --- 状態 ---
 let state = {
   totalCount: 0,
   pityLimit: 200,
+  creditPerPull: 0,
   charName: '',
   history: [],
   undoStack: [],
@@ -55,6 +63,7 @@ function load() {
       const parsed = JSON.parse(data);
       state.totalCount = parsed.totalCount ?? 0;
       state.pityLimit  = parsed.pityLimit ?? 200;
+      state.creditPerPull = parsed.creditPerPull ?? 0;
       state.charName   = parsed.charName ?? '';
       state.history    = parsed.history ?? [];
       state.undoStack  = parsed.undoStack ?? [];
@@ -89,6 +98,16 @@ function render() {
   dom.currentStreak.textContent = sinceLastGet;
   dom.pityInput.value = state.pityLimit;
 
+  // 消費クレジット
+  dom.creditInput.value = state.creditPerPull;
+  if (state.creditPerPull > 0) {
+    const totalCredit = state.totalCount * state.creditPerPull;
+    dom.totalCredit.textContent = totalCredit.toLocaleString();
+    dom.creditRow.classList.add('show');
+  } else {
+    dom.creditRow.classList.remove('show');
+  }
+
   // 天井が近い場合の警告 (残り20%以下)
   if (pityRemain <= state.pityLimit * 0.2 && pityRemain > 0) {
     dom.pityCounter.classList.add('pity-near');
@@ -103,14 +122,16 @@ function render() {
 function renderHistory() {
   if (state.history.length === 0) {
     dom.historyList.innerHTML = '<p class="history-empty">まだ獲得記録がありません</p>';
+    dom.historySummary.innerHTML = '';
     return;
   }
 
   dom.historyList.innerHTML = state.history.map((item, index) => {
-    const isLast = index === state.history.length - 1;
+    const shouldFlash = flashLatest && index === state.history.length - 1;
+    const label = item.charName ? item.charName : `${item.id}体目`;
     return `
-      <div class="history-item${isLast ? ' flash' : ''}" data-index="${index}">
-        <span class="history-item-id">${item.id}体目</span>
+      <div class="history-item${shouldFlash ? ' flash' : ''}" data-index="${index}">
+        <span class="history-item-id">${label}</span>
         <span class="history-item-total">${item.pullsSinceLast}回</span>
         <span class="history-item-diff">(累計${item.totalAtGet}回目)</span>
       </div>
@@ -119,6 +140,42 @@ function renderHistory() {
 
   // 最新の履歴が見えるようにスクロール
   dom.historyList.scrollTop = dom.historyList.scrollHeight;
+  flashLatest = false;
+
+  // 獲得サマリー
+  renderSummary();
+}
+
+function renderSummary() {
+  if (state.history.length === 0) {
+    dom.historySummary.innerHTML = '';
+    return;
+  }
+
+  // キャラ名ごとにグループ化
+  const groups = {};
+  state.history.forEach(item => {
+    const name = item.charName || '(名前未設定)';
+    if (!groups[name]) {
+      groups[name] = { count: 0, totalPulls: 0 };
+    }
+    groups[name].count += 1;
+    groups[name].totalPulls += item.pullsSinceLast;
+  });
+
+  const summaryItems = Object.entries(groups).map(([name, data]) => {
+    return `
+      <div class="summary-item">
+        <span class="summary-item-name">${name} <span class="summary-item-count">×${data.count}</span></span>
+        <span class="summary-item-pulls">合計${data.totalPulls}回</span>
+      </div>
+    `;
+  }).join('');
+
+  dom.historySummary.innerHTML = `
+    <div class="history-summary-title">── 獲得サマリー ──</div>
+    ${summaryItems}
+  `;
 }
 
 // =============================================
@@ -180,8 +237,10 @@ function recordGet() {
     id: state.history.length + 1,
     totalAtGet: state.totalCount,
     pullsSinceLast: pullsSinceLast,
+    charName: state.charName || '',
   });
 
+  flashLatest = true;
   render();
   save();
   animateGetEffect();
@@ -266,9 +325,31 @@ dom.charNameInput.addEventListener('keydown', (e) => {
   }
 });
 
+// 1連コスト設定
+dom.creditInput.addEventListener('change', (e) => {
+  const num = parseInt(e.target.value, 10);
+  state.creditPerPull = isNaN(num) || num < 0 ? 0 : num;
+  render();
+  save();
+});
+
 // 天井設定
 dom.pityInput.addEventListener('change', (e) => {
   updatePityLimit(e.target.value);
+});
+
+// 天井 +/- ボタン
+document.getElementById('pityPlus1').addEventListener('click', () => {
+  updatePityLimit(state.pityLimit + 1);
+});
+document.getElementById('pityPlus10').addEventListener('click', () => {
+  updatePityLimit(state.pityLimit + 10);
+});
+document.getElementById('pityMinus1').addEventListener('click', () => {
+  updatePityLimit(state.pityLimit - 1);
+});
+document.getElementById('pityMinus10').addEventListener('click', () => {
+  updatePityLimit(state.pityLimit - 10);
 });
 
 // キーボードショートカット
