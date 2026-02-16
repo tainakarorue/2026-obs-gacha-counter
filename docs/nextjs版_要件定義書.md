@@ -63,6 +63,7 @@
 | ID | 機能 | 説明 |
 |----|------|------|
 | F-13 | キャラ獲得記録 | 現在のカウントで獲得を記録。キャラ名も保存 |
+| F-13a | 複数体同時獲得 | 獲得数を＋／−ボタンで調整し、1回の操作で複数体分の履歴を一括記録。1体目に回数を記録し、2体目以降は0回。獲得後は自動で1体に戻る |
 
 ### 3.4 データ永続化
 
@@ -121,7 +122,7 @@ type HistoryEntry = {
 // --- Undo 操作 ---
 type UndoAction =
   | { type: 'pull'; amount: number; totalBefore: number }
-  | { type: 'get'; totalBefore: number };
+  | { type: 'get'; totalBefore: number; getCount: number };
 
 // --- アプリケーション状態 ---
 type GachaState = {
@@ -136,7 +137,7 @@ type GachaState = {
 // --- Zustand Store Actions ---
 type GachaActions = {
   addPull: (amount: number) => void;
-  recordGet: () => void;
+  recordGet: (count?: number) => void;
   undo: () => void;
   resetAll: () => void;
   setCharName: (name: string) => void;
@@ -190,8 +191,9 @@ type GachaActions = {
 │  武器B  ×1    合計30回           │
 │                                  │
 ├──────────────────────────────────┤
-│ [+1] [+10] [+11] [獲得!] [戻す]  │  ← Button (shadcn/ui)
-│           [リセット]              │
+│   [+1]     [+10]     [+11]       │  ← Button (shadcn/ui) 均等幅
+│   [−]  [ ○体獲得! ]  [＋]        │  ← 獲得ボタン + 獲得数調整
+│      [戻す]    [リセット]         │  ← 50%ずつ均等幅
 │ 天井: [-10][-1][___][+1][+10] 回 │
 ├──────────────────────────────────┤
 │  1:+1  2:+10  3:+11             │  ← ショートカット説明
@@ -246,7 +248,7 @@ gacha-counter-next/
 | `main-display` | 現在回数、総回数、消費クレジット、天井残り | - |
 | `history-list` | 獲得履歴の一覧表示、自動スクロール | `ScrollArea` |
 | `history-summary` | キャラ別サマリー表示 | - |
-| `control-buttons` | +1/+10/+11/獲得/戻す ボタン | `Button` |
+| `control-buttons` | +1/+10/+11/獲得(獲得数調整)/戻す/リセット ボタン | `Button` |
 | `pity-settings` | 天井回数の調整UI | `Button`, `Input` |
 | `shortcut-guide` | ショートカットキーの説明表示 | - |
 | `reset-dialog` | リセット確認モーダル | `AlertDialog` |
@@ -286,10 +288,13 @@ Zustand Store (gacha-store)
 ```
 1. ガード: totalCount === 0 → return
 2. ガード: sinceLastGet <= 0 → return
-3. undoStack に { type: 'get', totalBefore: totalCount } を push
-4. history に { id, totalAtGet, pullsSinceLast, charName } を push
-5. (自動保存)
-6. UI側: 獲得エフェクト + 最新履歴の点滅アニメーション
+3. undoStack に { type: 'get', totalBefore: totalCount, getCount } を push
+4. history に getCount 分のエントリを push
+   - 1体目: { id, totalAtGet, pullsSinceLast, charName }
+   - 2体目以降: { id, totalAtGet (同じ), pullsSinceLast: 0, charName }
+5. 獲得数を1にリセット
+6. (自動保存)
+7. UI側: 獲得エフェクト + 最新履歴の点滅アニメーション
 ```
 
 ### 8.3 Undo (`undo`)
@@ -298,7 +303,7 @@ Zustand Store (gacha-store)
 1. ガード: undoStack が空 → return
 2. undoStack から pop
 3. type === 'pull' → totalCount を totalBefore に復元
-4. type === 'get'  → history から最後の要素を pop、id を振り直す
+4. type === 'get'  → history から getCount 分の要素を pop、id を振り直す
 5. (自動保存)
 ```
 
@@ -333,6 +338,7 @@ Zustand Store (gacha-store)
 | 獲得履歴キャラ名 | ライトブルー | `#a0b0ff` |
 | ボタン (ガチャ) | ダークブルー | `#3050a0` |
 | ボタン (獲得) | ゴールド | `#d4a020` |
+| ボタン (獲得数調整) | ゴールド (薄) | `rgba(212, 160, 32, 0.2)` |
 | ボタン (戻す) | グレー | `#404858` |
 | ボタン (リセット) | ダークレッド | `#802030` |
 

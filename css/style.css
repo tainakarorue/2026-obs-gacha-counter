@@ -24,7 +24,7 @@ body {
 /* --- コンテナ --- */
 .container {
   position: relative;
-  background: rgba(15, 15, 25, 0.85);
+  background: rgba(15, 15, 25, 0.95);
   border: 1px solid rgba(100, 120, 255, 0.3);
   border-radius: 12px;
   padding: 20px 24px;
@@ -224,7 +224,7 @@ body {
 }
 
 .history-list {
-  max-height: 160px;
+  max-height: 120px;
   overflow-y: auto;
   display: flex;
   flex-direction: column;
@@ -354,7 +354,7 @@ body {
   display: flex;
   justify-content: center;
   gap: 6px;
-  margin-bottom: 8px;
+  margin-bottom: 14px;
 }
 
 .btn {
@@ -380,23 +380,52 @@ body {
 .btn-pull {
   background: #3050a0;
   color: #e0e8ff;
+  flex: 1;
 }
 
 .btn-get {
   background: #d4a020;
   color: #1a1a10;
+  flex: 1;
 }
 
 .btn-undo {
   background: #404858;
   color: #b0b8cc;
+  flex: 1;
 }
+
+/* --- 獲得数調整 --- */
+.btn-get-adjust {
+  border: none;
+  border-radius: 6px;
+  padding: 8px 10px;
+  font-size: 16px;
+  font-weight: 700;
+  cursor: pointer;
+  background: rgba(212, 160, 32, 0.2);
+  color: #d4a020;
+  font-family: inherit;
+  transition: background 0.15s ease, transform 0.1s ease;
+  min-width: 32px;
+  line-height: 1;
+}
+
+.btn-get-adjust:hover {
+  background: rgba(212, 160, 32, 0.35);
+}
+
+.btn-get-adjust:active {
+  transform: scale(0.95);
+}
+
 
 .btn-reset {
   background: #802030;
   color: #ffc0c0;
   font-size: 12px;
   padding: 6px 20px;
+  flex: 1;
 }
 
 /* --- 天井設定 --- */

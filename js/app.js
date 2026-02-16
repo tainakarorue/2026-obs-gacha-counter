@@ -23,6 +23,9 @@ const dom = {
   btnGet:           document.getElementById('btnGet'),
   btnUndo:          document.getElementById('btnUndo'),
   btnReset:         document.getElementById('btnReset'),
+  getCountDisplay:  document.getElementById('getCountDisplay'),
+  getCountPlus:     document.getElementById('getCountPlus'),
+  getCountMinus:    document.getElementById('getCountMinus'),
   charNameInput:    document.getElementById('charNameInput'),
   confirmOverlay:   document.getElementById('confirmOverlay'),
   confirmYes:       document.getElementById('confirmYes'),
@@ -35,6 +38,8 @@ const dom = {
 let flashLatest = false;
 
 // --- 状態 ---
+let getCount = 1; // 獲得数 (UIのみ、保存しない)
+
 let state = {
   totalCount: 0,
   pityLimit: 200,
@@ -227,18 +232,34 @@ function recordGet() {
   // 前回獲得から回数が進んでいない場合は記録しない
   if (pullsSinceLast <= 0) return;
 
-  // Undo用に保存
+  // Undo用に保存 (獲得数も記録)
   state.undoStack.push({
     type: 'get',
     totalBefore: state.totalCount,
+    getCount: getCount,
   });
 
+  // 1体目: pullsSinceLast を記録
   state.history.push({
     id: state.history.length + 1,
     totalAtGet: state.totalCount,
     pullsSinceLast: pullsSinceLast,
     charName: state.charName || '',
   });
+
+  // 2体目以降: 同じ totalAtGet で pullsSinceLast = 0
+  for (let i = 1; i < getCount; i++) {
+    state.history.push({
+      id: state.history.length + 1,
+      totalAtGet: state.totalCount,
+      pullsSinceLast: 0,
+      charName: state.charName || '',
+    });
+  }
+
+  // 獲得数を1にリセット
+  getCount = 1;
+  dom.getCountDisplay.textContent = getCount;
 
   flashLatest = true;
   render();
@@ -254,7 +275,10 @@ function undo() {
   if (lastAction.type === 'pull') {
     state.totalCount = lastAction.totalBefore;
   } else if (lastAction.type === 'get') {
-    state.history.pop();
+    const count = lastAction.getCount || 1;
+    for (let i = 0; i < count; i++) {
+      state.history.pop();
+    }
     // id を振り直す
     state.history.forEach((item, index) => {
       item.id = index + 1;
@@ -307,6 +331,16 @@ dom.btnPull1.addEventListener('click', () => addPull(1));
 dom.btnPull10.addEventListener('click', () => addPull(10));
 dom.btnPull11.addEventListener('click', () => addPull(11));
 dom.btnGet.addEventListener('click', () => recordGet());
+dom.getCountPlus.addEventListener('click', () => {
+  getCount++;
+  dom.getCountDisplay.textContent = getCount;
+});
+dom.getCountMinus.addEventListener('click', () => {
+  if (getCount > 1) {
+    getCount--;
+    dom.getCountDisplay.textContent = getCount;
+  }
+});
 dom.btnUndo.addEventListener('click', () => undo());
 dom.btnReset.addEventListener('click', () => showResetConfirm());
 dom.confirmYes.addEventListener('click', () => resetAll());
