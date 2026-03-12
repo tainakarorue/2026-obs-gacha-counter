@@ -1,0 +1,1065 @@
+# 07 - OBS版 実装
+
+## 対象フォルダ
+
+`obs/`
+
+Xポスト機能・広告なし。OBSブラウザソースでの配信オーバーレイ専用。
+
+---
+
+## obs/index.html
+
+```html
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ガチャカウンター</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <div class="container">
+    <!-- タイトル -->
+    <div class="title">
+      <div class="char-name-input" id="charNameInput" contenteditable="true" data-placeholder="キャラクター名を入力"></div>
+      <span class="title-sub">ガチャカウンター</span>
+    </div>
+
+    <!-- メインカウンター -->
+    <div class="counter-section">
+      <div class="main-counter">
+        <span class="counter-label">現在</span>
+        <span class="counter-value" id="currentStreak">0</span>
+        <span class="counter-unit">回</span>
+      </div>
+
+      <div class="sub-counters">
+        <div class="sub-counter total-counter">
+          <div class="total-left">
+            <span class="sub-label">総回数</span>
+            <span class="sub-value" id="totalCount">0</span>
+            <span class="sub-unit">回</span>
+          </div>
+          <span class="sub-unit">×</span>
+          <div class="total-right">
+            <span class="sub-unit">1連</span>
+            <input class="credit-input" type="number" id="creditInput" value="0" min="0" max="99999">
+          </div>
+        </div>
+        <div class="sub-counter credit-counter" id="creditRow">
+          <span class="sub-label">消費</span>
+          <span class="sub-value" id="totalCredit">0</span>
+        </div>
+        <div class="sub-counter pity-counter">
+          <span class="sub-label">天井まで</span>
+          <span class="sub-value" id="pityRemain">200</span>
+          <span class="sub-unit">回 /</span>
+          <span class="sub-value" id="pityLimitDisplay">200</span>
+          <span class="sub-unit">回</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- 獲得履歴 -->
+    <div class="history-section">
+      <h2 class="history-title">獲得履歴</h2>
+      <div class="history-list" id="historyList">
+        <p class="history-empty">まだ獲得記録がありません</p>
+      </div>
+      <div class="history-summary" id="historySummary"></div>
+    </div>
+
+    <!-- 操作ボタン -->
+    <div class="controls-section">
+      <div class="button-row">
+        <button class="btn btn-pull" id="btnPull1" data-amount="1">+1</button>
+        <button class="btn btn-pull" id="btnPull10" data-amount="10">+10</button>
+        <button class="btn btn-pull" id="btnPull11" data-amount="11">+11</button>
+      </div>
+      <div class="button-row">
+        <button class="btn-get-adjust" id="getCountMinus">−</button>
+        <button class="btn btn-get" id="btnGet"><span id="getCountDisplay">1</span>体獲得!</button>
+        <button class="btn-get-adjust" id="getCountPlus">＋</button>
+      </div>
+      <div class="button-row">
+        <button class="btn btn-undo" id="btnUndo">戻す</button>
+        <button class="btn btn-reset" id="btnReset">リセット</button>
+      </div>
+
+      <!-- 天井設定 -->
+      <div class="setting-row">
+        <label class="setting-label" for="pityInput">天井:</label>
+        <button class="btn-pity-adjust" id="pityMinus10">-10</button>
+        <button class="btn-pity-adjust" id="pityMinus1">-1</button>
+        <input class="setting-input" type="number" id="pityInput" value="200" min="1" max="9999">
+        <button class="btn-pity-adjust" id="pityPlus1">+1</button>
+        <button class="btn-pity-adjust" id="pityPlus10">+10</button>
+        <span class="setting-unit">回</span>
+      </div>
+    </div>
+
+    <!-- ショートカット説明 -->
+    <div class="shortcut-section">
+      <span class="shortcut-item">1:+1</span>
+      <span class="shortcut-item">2:+10</span>
+      <span class="shortcut-item">3:+11</span>
+      <span class="shortcut-item">Space:獲得</span>
+      <span class="shortcut-item">Z:戻す</span>
+      <span class="shortcut-item">R:リセット</span>
+    </div>
+
+    <!-- リセット確認ダイアログ -->
+    <div class="confirm-overlay" id="confirmOverlay">
+      <div class="confirm-dialog">
+        <p class="confirm-message">全てのデータをリセットしますか？</p>
+        <div class="confirm-buttons">
+          <button class="btn btn-reset" id="confirmYes">リセットする</button>
+          <button class="btn btn-undo" id="confirmNo">キャンセル</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="js/app.js"></script>
+</body>
+</html>
+```
+
+---
+
+## obs/js/app.js
+
+```javascript
+/* ============================================
+   ガチャカウンター (OBS版) - アプリケーションロジック
+   ============================================ */
+
+// --- 定数 ---
+const STORAGE_KEY = 'gacha-counter-data';
+
+// --- DOM要素 ---
+const dom = {
+  totalCount:       document.getElementById('totalCount'),
+  pityRemain:       document.getElementById('pityRemain'),
+  pityLimitDisplay: document.getElementById('pityLimitDisplay'),
+  currentStreak:    document.getElementById('currentStreak'),
+  creditInput:      document.getElementById('creditInput'),
+  totalCredit:      document.getElementById('totalCredit'),
+  creditRow:        document.getElementById('creditRow'),
+  historyList:      document.getElementById('historyList'),
+  historySummary:   document.getElementById('historySummary'),
+  pityInput:        document.getElementById('pityInput'),
+  btnPull1:         document.getElementById('btnPull1'),
+  btnPull10:        document.getElementById('btnPull10'),
+  btnPull11:        document.getElementById('btnPull11'),
+  btnGet:           document.getElementById('btnGet'),
+  btnUndo:          document.getElementById('btnUndo'),
+  btnReset:         document.getElementById('btnReset'),
+  getCountDisplay:  document.getElementById('getCountDisplay'),
+  getCountPlus:     document.getElementById('getCountPlus'),
+  getCountMinus:    document.getElementById('getCountMinus'),
+  charNameInput:    document.getElementById('charNameInput'),
+  confirmOverlay:   document.getElementById('confirmOverlay'),
+  confirmYes:       document.getElementById('confirmYes'),
+  confirmNo:        document.getElementById('confirmNo'),
+  container:        document.querySelector('.container'),
+  pityCounter:      document.querySelector('.pity-counter'),
+};
+
+// --- フラグ ---
+let flashLatest = false;
+
+// --- 状態 ---
+let getCount = 1;
+
+let state = {
+  totalCount: 0,
+  pityLimit: 200,
+  creditPerPull: 0,
+  charName: '',
+  history: [],
+  undoStack: [],
+};
+
+// =============================================
+// データ永続化
+// =============================================
+
+function save() {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+  } catch (e) {}
+}
+
+function load() {
+  try {
+    const data = localStorage.getItem(STORAGE_KEY);
+    if (data) {
+      const parsed = JSON.parse(data);
+      state.totalCount    = parsed.totalCount ?? 0;
+      state.pityLimit     = parsed.pityLimit ?? 200;
+      state.creditPerPull = parsed.creditPerPull ?? 0;
+      state.charName      = parsed.charName ?? '';
+      state.history       = parsed.history ?? [];
+      state.undoStack     = parsed.undoStack ?? [];
+    }
+  } catch (e) {}
+}
+
+// =============================================
+// 描画
+// =============================================
+
+function render() {
+  if (document.activeElement !== dom.charNameInput) {
+    dom.charNameInput.textContent = state.charName;
+  }
+
+  dom.totalCount.textContent = state.totalCount;
+
+  const lastGetTotal = state.history.length > 0
+    ? state.history[state.history.length - 1].totalAtGet
+    : 0;
+  const sinceLastGet = state.totalCount - lastGetTotal;
+  const pityRemain = Math.max(0, state.pityLimit - sinceLastGet);
+
+  dom.pityRemain.textContent = pityRemain;
+  dom.pityLimitDisplay.textContent = state.pityLimit;
+  dom.currentStreak.textContent = sinceLastGet;
+  dom.pityInput.value = state.pityLimit;
+
+  dom.creditInput.value = state.creditPerPull;
+  if (state.creditPerPull > 0) {
+    const totalCredit = state.totalCount * state.creditPerPull;
+    dom.totalCredit.textContent = totalCredit.toLocaleString();
+    dom.creditRow.classList.add('show');
+  } else {
+    dom.creditRow.classList.remove('show');
+  }
+
+  if (pityRemain <= state.pityLimit * 0.2 && pityRemain > 0) {
+    dom.pityCounter.classList.add('pity-near');
+  } else {
+    dom.pityCounter.classList.remove('pity-near');
+  }
+
+  renderHistory();
+}
+
+function renderHistory() {
+  if (state.history.length === 0) {
+    dom.historyList.innerHTML = '<p class="history-empty">まだ獲得記録がありません</p>';
+    dom.historySummary.innerHTML = '';
+    return;
+  }
+
+  dom.historyList.innerHTML = state.history.map((item, index) => {
+    const shouldFlash = flashLatest && index === state.history.length - 1;
+    const label = item.charName ? item.charName : `${item.id}体目`;
+    return `
+      <div class="history-item${shouldFlash ? ' flash' : ''}" data-index="${index}">
+        <span class="history-item-id">${label}</span>
+        <span class="history-item-total">${item.pullsSinceLast}回</span>
+        <span class="history-item-diff">(累計${item.totalAtGet}回目)</span>
+      </div>
+    `;
+  }).join('');
+
+  dom.historyList.scrollTop = dom.historyList.scrollHeight;
+  flashLatest = false;
+
+  renderSummary();
+}
+
+function buildSummaryGroups() {
+  const groups = {};
+  state.history.forEach(item => {
+    const name = item.charName || '(名前未設定)';
+    if (!groups[name]) {
+      groups[name] = { count: 0, totalPulls: 0 };
+    }
+    groups[name].count += 1;
+    groups[name].totalPulls += item.pullsSinceLast;
+  });
+  return groups;
+}
+
+function renderSummary() {
+  if (state.history.length === 0) {
+    dom.historySummary.innerHTML = '';
+    return;
+  }
+
+  const groups = buildSummaryGroups();
+
+  const summaryItems = Object.entries(groups).map(([name, data]) => {
+    const toku = data.count - 1;
+    return `
+      <div class="summary-item">
+        <span class="summary-item-name">${name} <span class="summary-item-count">×${data.count}</span> <span class="summary-item-toku">${toku}凸</span></span>
+        <span class="summary-item-pulls">合計${data.totalPulls}回</span>
+      </div>
+    `;
+  }).join('');
+
+  dom.historySummary.innerHTML = `
+    <div class="history-summary-title">── 獲得サマリー ──</div>
+    ${summaryItems}
+  `;
+}
+
+// =============================================
+// アニメーション
+// =============================================
+
+function animateCounter() {
+  dom.currentStreak.classList.remove('pulse');
+  void dom.currentStreak.offsetWidth;
+  dom.currentStreak.classList.add('pulse');
+}
+
+function animateGetEffect() {
+  dom.container.classList.remove('get-effect');
+  void dom.container.offsetWidth;
+  dom.container.classList.add('get-effect');
+}
+
+// =============================================
+// カウント操作
+// =============================================
+
+function addPull(amount) {
+  state.undoStack.push({
+    type: 'pull',
+    amount: amount,
+    totalBefore: state.totalCount,
+  });
+  state.totalCount += amount;
+  render();
+  save();
+  animateCounter();
+}
+
+function recordGet() {
+  if (state.totalCount === 0) return;
+
+  const lastGetTotal = state.history.length > 0
+    ? state.history[state.history.length - 1].totalAtGet
+    : 0;
+  const pullsSinceLast = state.totalCount - lastGetTotal;
+
+  if (pullsSinceLast <= 0) return;
+
+  state.undoStack.push({
+    type: 'get',
+    totalBefore: state.totalCount,
+    getCount: getCount,
+  });
+
+  state.history.push({
+    id: state.history.length + 1,
+    totalAtGet: state.totalCount,
+    pullsSinceLast: pullsSinceLast,
+    charName: state.charName || '',
+  });
+
+  for (let i = 1; i < getCount; i++) {
+    state.history.push({
+      id: state.history.length + 1,
+      totalAtGet: state.totalCount,
+      pullsSinceLast: 0,
+      charName: state.charName || '',
+    });
+  }
+
+  getCount = 1;
+  dom.getCountDisplay.textContent = getCount;
+
+  flashLatest = true;
+  render();
+  save();
+  animateGetEffect();
+}
+
+function undo() {
+  if (state.undoStack.length === 0) return;
+
+  const lastAction = state.undoStack.pop();
+
+  if (lastAction.type === 'pull') {
+    state.totalCount = lastAction.totalBefore;
+  } else if (lastAction.type === 'get') {
+    const count = lastAction.getCount || 1;
+    for (let i = 0; i < count; i++) {
+      state.history.pop();
+    }
+    state.history.forEach((item, index) => {
+      item.id = index + 1;
+    });
+  }
+
+  render();
+  save();
+}
+
+function showResetConfirm() {
+  dom.confirmOverlay.classList.add('show');
+}
+
+function hideResetConfirm() {
+  dom.confirmOverlay.classList.remove('show');
+}
+
+function resetAll() {
+  hideResetConfirm();
+  state.totalCount = 0;
+  state.charName = '';
+  state.history = [];
+  state.undoStack = [];
+  render();
+  save();
+}
+
+function updateCharName(value) {
+  state.charName = value;
+  save();
+}
+
+function updatePityLimit(value) {
+  const num = parseInt(value, 10);
+  if (isNaN(num) || num < 1) return;
+  state.pityLimit = num;
+  render();
+  save();
+}
+
+// =============================================
+// イベントリスナー
+// =============================================
+
+dom.btnPull1.addEventListener('click', () => addPull(1));
+dom.btnPull10.addEventListener('click', () => addPull(10));
+dom.btnPull11.addEventListener('click', () => addPull(11));
+dom.btnGet.addEventListener('click', () => recordGet());
+dom.getCountPlus.addEventListener('click', () => {
+  getCount++;
+  dom.getCountDisplay.textContent = getCount;
+});
+dom.getCountMinus.addEventListener('click', () => {
+  if (getCount > 1) {
+    getCount--;
+    dom.getCountDisplay.textContent = getCount;
+  }
+});
+dom.btnUndo.addEventListener('click', () => undo());
+dom.btnReset.addEventListener('click', () => showResetConfirm());
+dom.confirmYes.addEventListener('click', () => resetAll());
+dom.confirmNo.addEventListener('click', () => hideResetConfirm());
+
+dom.charNameInput.addEventListener('input', () => {
+  updateCharName(dom.charNameInput.textContent);
+});
+
+dom.charNameInput.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') {
+    e.preventDefault();
+    dom.charNameInput.blur();
+  }
+});
+
+dom.creditInput.addEventListener('change', (e) => {
+  const num = parseInt(e.target.value, 10);
+  state.creditPerPull = isNaN(num) || num < 0 ? 0 : num;
+  render();
+  save();
+});
+
+dom.pityInput.addEventListener('change', (e) => {
+  updatePityLimit(e.target.value);
+});
+
+document.getElementById('pityPlus1').addEventListener('click', () => {
+  updatePityLimit(state.pityLimit + 1);
+});
+document.getElementById('pityPlus10').addEventListener('click', () => {
+  updatePityLimit(state.pityLimit + 10);
+});
+document.getElementById('pityMinus1').addEventListener('click', () => {
+  updatePityLimit(state.pityLimit - 1);
+});
+document.getElementById('pityMinus10').addEventListener('click', () => {
+  updatePityLimit(state.pityLimit - 10);
+});
+
+document.addEventListener('keydown', (e) => {
+  if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.isContentEditable) return;
+
+  switch (e.key) {
+    case '1': e.preventDefault(); addPull(1); break;
+    case '2': e.preventDefault(); addPull(10); break;
+    case '3': e.preventDefault(); addPull(11); break;
+    case ' ': e.preventDefault(); recordGet(); break;
+    case 'z': case 'Z': e.preventDefault(); undo(); break;
+    case 'r': case 'R': e.preventDefault(); showResetConfirm(); break;
+  }
+});
+
+// =============================================
+// 初期化
+// =============================================
+
+function init() {
+  load();
+  render();
+}
+
+init();
+```
+
+---
+
+## obs/css/style.css
+
+現在の `css/style.css` から `.btn-tweet` / `.btn-tweet:hover:not(:disabled)` / `.btn-tweet:disabled` の3ブロックを除いたもの。
+
+```css
+/* ============================================
+   ガチャカウンター (OBS版) - スタイルシート
+   OBS ブラウザソース対応 (透明背景)
+   ============================================ */
+
+*, *::before, *::after {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  background: transparent;
+  font-family: "Segoe UI", "Hiragino Kaku Gothic ProN", "Noto Sans JP", "Meiryo", sans-serif;
+  color: #f0f0f0;
+  min-height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  padding: 12px;
+}
+
+.container {
+  position: relative;
+  background: rgba(15, 15, 25, 0.95);
+  border: 1px solid rgba(100, 120, 255, 0.3);
+  border-radius: 12px;
+  padding: 20px 24px;
+  width: 380px;
+  box-shadow: 0 0 20px rgba(80, 100, 255, 0.15);
+}
+
+.title {
+  text-align: center;
+  margin-bottom: 16px;
+  border-bottom: 1px solid rgba(100, 120, 255, 0.25);
+  padding-bottom: 10px;
+}
+
+.char-name-input {
+  display: block;
+  width: 100%;
+  min-height: 1.4em;
+  background: transparent;
+  border: 1px solid rgba(100, 120, 255, 0.2);
+  border-radius: 6px;
+  padding: 6px 10px;
+  font-size: 18px;
+  font-weight: 700;
+  color: #ffffff;
+  text-align: center;
+  font-family: inherit;
+  letter-spacing: 0.08em;
+  margin-bottom: 4px;
+  cursor: text;
+  word-break: break-all;
+}
+
+.char-name-input:empty::before {
+  content: attr(data-placeholder);
+  color: #667088;
+  font-weight: 400;
+  pointer-events: none;
+}
+
+.char-name-input:focus {
+  outline: none;
+  border-color: rgba(100, 140, 255, 0.5);
+}
+
+.title-sub {
+  font-size: 12px;
+  color: #8890aa;
+  letter-spacing: 0.15em;
+}
+
+.counter-section {
+  text-align: center;
+  margin-bottom: 16px;
+}
+
+.main-counter {
+  display: flex;
+  align-items: baseline;
+  justify-content: center;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.counter-label {
+  font-size: 16px;
+  color: #b0b8d0;
+}
+
+.counter-value {
+  font-size: 56px;
+  font-weight: 800;
+  color: #ffffff;
+  text-shadow: 0 0 12px rgba(100, 140, 255, 0.6);
+  line-height: 1;
+  transition: transform 0.1s ease;
+}
+
+.counter-unit {
+  font-size: 18px;
+  color: #b0b8d0;
+}
+
+.counter-value.pulse {
+  animation: counterPulse 0.3s ease;
+}
+
+@keyframes counterPulse {
+  0%   { transform: scale(1); }
+  40%  { transform: scale(1.15); color: #70cfff; }
+  100% { transform: scale(1); }
+}
+
+.sub-counters {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.sub-counter {
+  display: flex;
+  align-items: baseline;
+  justify-content: center;
+  gap: 4px;
+  font-size: 14px;
+}
+
+.sub-label {
+  color: #b0b8d0;
+}
+
+.sub-value {
+  font-size: 20px;
+  font-weight: 700;
+  color: #e0e0e0;
+}
+
+.sub-unit {
+  color: #98a0b8;
+  font-size: 13px;
+}
+
+.total-left, .total-right {
+  display: flex;
+  align-items: baseline;
+  gap: 4px;
+}
+
+.total-counter .sub-value {
+  color: #70cfff;
+}
+
+.credit-input {
+  width: 56px;
+  padding: 2px 4px;
+  border: 1px solid rgba(100, 120, 255, 0.25);
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.08);
+  color: #e0e0e0;
+  font-size: 13px;
+  text-align: center;
+  font-family: inherit;
+  -moz-appearance: textfield;
+}
+
+.credit-input::-webkit-outer-spin-button,
+.credit-input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.credit-input:focus {
+  outline: none;
+  border-color: rgba(100, 140, 255, 0.5);
+}
+
+.credit-counter {
+  display: none;
+}
+
+.credit-counter.show {
+  display: flex;
+}
+
+.credit-counter .sub-value {
+  color: #ff90d0;
+}
+
+.pity-counter .sub-value {
+  color: #ffb060;
+}
+
+.pity-counter.pity-near .sub-value {
+  color: #ff6060;
+  text-shadow: 0 0 8px rgba(255, 80, 80, 0.5);
+}
+
+.history-section {
+  margin-bottom: 16px;
+  border-top: 1px solid rgba(100, 120, 255, 0.15);
+  padding-top: 12px;
+}
+
+.history-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: #b0b8d0;
+  margin-bottom: 8px;
+  text-align: center;
+  letter-spacing: 0.1em;
+}
+
+.history-list {
+  height: 120px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.history-list::-webkit-scrollbar {
+  width: 4px;
+}
+
+.history-list::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 2px;
+}
+
+.history-list::-webkit-scrollbar-thumb {
+  background: rgba(100, 120, 255, 0.3);
+  border-radius: 2px;
+}
+
+.history-empty {
+  text-align: center;
+  color: #555;
+  font-size: 13px;
+  padding: 8px 0;
+}
+
+.history-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 4px 10px;
+  background: rgba(255, 255, 255, 0.04);
+  border-radius: 6px;
+  font-size: 13px;
+}
+
+.history-item-id {
+  color: #a0b0ff;
+  font-weight: 700;
+  min-width: 48px;
+}
+
+.history-item-total {
+  color: #e0e0e0;
+  font-weight: 600;
+}
+
+.history-item-diff {
+  color: #98a0b8;
+  font-size: 12px;
+}
+
+.history-summary {
+  margin-top: 10px;
+  padding: 8px 12px;
+  height: 80px;
+  overflow-y: auto;
+  background: rgba(100, 120, 255, 0.08);
+  border-radius: 6px;
+  border: 1px solid rgba(100, 120, 255, 0.15);
+}
+
+.history-summary-title {
+  font-size: 12px;
+  color: #8890aa;
+  text-align: center;
+  margin-bottom: 6px;
+  letter-spacing: 0.1em;
+}
+
+.summary-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 2px 4px;
+  font-size: 13px;
+}
+
+.summary-item-name {
+  color: #a0b0ff;
+  font-weight: 600;
+}
+
+.summary-item-count {
+  color: #70cfff;
+  font-weight: 700;
+}
+
+.summary-item-toku {
+  color: #ffa040;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.summary-item-pulls {
+  color: #98a0b8;
+  font-size: 12px;
+}
+
+.history-item.flash {
+  animation: getFlash 0.6s ease;
+}
+
+@keyframes getFlash {
+  0%   { background: rgba(255, 200, 60, 0.5); transform: scale(1.03); }
+  100% { background: rgba(255, 255, 255, 0.04); transform: scale(1); }
+}
+
+.container.get-effect {
+  animation: getGlow 0.6s ease;
+}
+
+@keyframes getGlow {
+  0%   { box-shadow: 0 0 20px rgba(80, 100, 255, 0.15); }
+  30%  { box-shadow: 0 0 40px rgba(255, 200, 60, 0.5), 0 0 80px rgba(255, 180, 40, 0.2); }
+  100% { box-shadow: 0 0 20px rgba(80, 100, 255, 0.15); }
+}
+
+.controls-section {
+  border-top: 1px solid rgba(100, 120, 255, 0.15);
+  padding-top: 12px;
+  margin-bottom: 10px;
+}
+
+.button-row {
+  display: flex;
+  justify-content: center;
+  gap: 6px;
+  margin-bottom: 14px;
+}
+
+.btn {
+  border: none;
+  border-radius: 8px;
+  padding: 8px 14px;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: transform 0.1s ease, filter 0.1s ease;
+  font-family: inherit;
+}
+
+.btn:hover {
+  filter: brightness(1.15);
+  transform: translateY(-1px);
+}
+
+.btn:active {
+  transform: translateY(1px) scale(0.97);
+}
+
+.btn-pull {
+  background: #3050a0;
+  color: #e0e8ff;
+  flex: 1;
+}
+
+.btn-get {
+  background: #d4a020;
+  color: #1a1a10;
+  flex: 1;
+}
+
+.btn-undo {
+  background: #404858;
+  color: #b0b8cc;
+  flex: 1;
+}
+
+.btn-get-adjust {
+  border: none;
+  border-radius: 6px;
+  padding: 8px 10px;
+  font-size: 16px;
+  font-weight: 700;
+  cursor: pointer;
+  background: rgba(212, 160, 32, 0.2);
+  color: #d4a020;
+  font-family: inherit;
+  transition: background 0.15s ease, transform 0.1s ease;
+  min-width: 32px;
+  line-height: 1;
+}
+
+.btn-get-adjust:hover {
+  background: rgba(212, 160, 32, 0.35);
+}
+
+.btn-get-adjust:active {
+  transform: scale(0.95);
+}
+
+.btn-reset {
+  background: #802030;
+  color: #ffc0c0;
+  font-size: 12px;
+  padding: 6px 20px;
+  flex: 1;
+}
+
+.setting-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  margin-top: 4px;
+}
+
+.setting-label {
+  font-size: 13px;
+  color: #b0b8d0;
+}
+
+.setting-input {
+  width: 70px;
+  padding: 4px 8px;
+  border: 1px solid rgba(100, 120, 255, 0.3);
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.08);
+  color: #e0e0e0;
+  font-size: 14px;
+  text-align: center;
+  font-family: inherit;
+  -moz-appearance: textfield;
+}
+
+.setting-input::-webkit-outer-spin-button,
+.setting-input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.btn-pity-adjust {
+  border: none;
+  border-radius: 6px;
+  padding: 6px 10px;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  background: rgba(100, 120, 255, 0.15);
+  color: #b0b8d0;
+  font-family: inherit;
+  transition: background 0.15s ease, transform 0.1s ease;
+  min-width: 36px;
+}
+
+.btn-pity-adjust:hover {
+  background: rgba(100, 120, 255, 0.3);
+  color: #e0e8ff;
+}
+
+.btn-pity-adjust:active {
+  transform: scale(0.95);
+}
+
+.setting-input:focus {
+  outline: none;
+  border-color: rgba(100, 140, 255, 0.6);
+}
+
+.setting-unit {
+  font-size: 13px;
+  color: #98a0b8;
+}
+
+.shortcut-section {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 6px 12px;
+  padding-top: 8px;
+  border-top: 1px solid rgba(100, 120, 255, 0.1);
+}
+
+.shortcut-item {
+  font-size: 11px;
+  color: #8890a8;
+  letter-spacing: 0.03em;
+}
+
+.confirm-overlay {
+  display: none;
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.6);
+  border-radius: 12px;
+  justify-content: center;
+  align-items: center;
+  z-index: 100;
+}
+
+.confirm-overlay.show {
+  display: flex;
+}
+
+.confirm-dialog {
+  background: rgba(30, 30, 50, 0.95);
+  border: 1px solid rgba(255, 80, 80, 0.4);
+  border-radius: 10px;
+  padding: 20px 24px;
+  text-align: center;
+}
+
+.confirm-message {
+  font-size: 15px;
+  color: #e0e0e0;
+  margin-bottom: 16px;
+}
+
+.confirm-buttons {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+}
+```

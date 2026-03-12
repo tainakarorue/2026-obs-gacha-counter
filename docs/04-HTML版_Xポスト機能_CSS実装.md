@@ -1,3 +1,111 @@
+# 04 - HTML版 Xポスト機能 CSS実装
+
+## 変更ファイル
+
+`css/style.css`
+
+---
+
+## 追加するスタイル
+
+### 1. Xポストボタン (`.btn-tweet`)
+
+既存の `.btn-reset` スタイルの直後に追加する。
+
+X (旧Twitter) の現行ブランドカラーは黒 (`#000000`) だが、
+オーバーレイの暗い背景上での視認性を確保するため、白文字・濃いグレー背景を採用する。
+
+### 2. サマリーの凸数バッジ (`.summary-item-toku`)
+
+既存の `.summary-item-count` の直後に追加する。
+
+---
+
+## 変更箇所
+
+### 変更前 (`.btn-reset` の直後、`--- 天井設定 ---` の前)
+
+```css
+.btn-reset {
+  background: #802030;
+  color: #ffc0c0;
+  font-size: 12px;
+  padding: 6px 20px;
+  flex: 1;
+}
+
+/* --- 天井設定 --- */
+```
+
+### 変更後
+
+```css
+.btn-reset {
+  background: #802030;
+  color: #ffc0c0;
+  font-size: 12px;
+  padding: 6px 20px;
+  flex: 1;
+}
+
+.btn-tweet {
+  background: #1a1a1a;
+  color: #e0e0e0;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  flex: 1;
+  font-size: 13px;
+}
+
+.btn-tweet:hover:not(:disabled) {
+  background: #2a2a2a;
+  border-color: rgba(255, 255, 255, 0.4);
+}
+
+.btn-tweet:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+  transform: none;
+  filter: none;
+}
+
+/* --- 天井設定 --- */
+```
+
+---
+
+### 変更前 (`.summary-item-count` の直後)
+
+```css
+.summary-item-count {
+  color: #70cfff;
+  font-weight: 700;
+}
+
+.summary-item-pulls {
+```
+
+### 変更後
+
+```css
+.summary-item-count {
+  color: #70cfff;
+  font-weight: 700;
+}
+
+.summary-item-toku {
+  color: #ffa040;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.summary-item-pulls {
+```
+
+---
+
+## 変更後の css/style.css 全文
+
+```css
 /* ============================================
    ガチャカウンター - スタイルシート
    OBS ブラウザソース対応 (透明背景)
@@ -289,7 +397,6 @@ body {
   border: 1px solid rgba(100, 120, 255, 0.15);
 }
 
-
 .history-summary-title {
   font-size: 12px;
   color: #8890aa;
@@ -423,7 +530,6 @@ body {
 .btn-get-adjust:active {
   transform: scale(0.95);
 }
-
 
 .btn-reset {
   background: #802030;
@@ -573,3 +679,4 @@ body {
   gap: 10px;
   justify-content: center;
 }
+```

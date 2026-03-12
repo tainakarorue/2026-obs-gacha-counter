@@ -1,3 +1,49 @@
+# 02 - HTML版 Xポスト機能 HTML実装
+
+## 変更ファイル
+
+`index.html`
+
+---
+
+## 変更箇所
+
+操作ボタンセクション内、「戻す / リセット」ボタン行の**直後**にXポストボタン行を追加する。
+
+### 変更前 (index.html 73〜88行目付近)
+
+```html
+      <div class="button-row">
+        <button class="btn btn-undo" id="btnUndo">戻す</button>
+        <button class="btn btn-reset" id="btnReset">リセット</button>
+      </div>
+
+      <!-- 天井設定 -->
+      <div class="setting-row">
+```
+
+### 変更後
+
+```html
+      <div class="button-row">
+        <button class="btn btn-undo" id="btnUndo">戻す</button>
+        <button class="btn btn-reset" id="btnReset">リセット</button>
+      </div>
+
+      <!-- Xポストボタン -->
+      <div class="button-row">
+        <button class="btn btn-tweet" id="btnTweet" disabled>X (Twitter) にポスト</button>
+      </div>
+
+      <!-- 天井設定 -->
+      <div class="setting-row">
+```
+
+---
+
+## 変更後の index.html 全文
+
+```html
 <!DOCTYPE html>
 <html lang="ja">
 <head>
@@ -117,3 +163,11 @@
   <script src="js/app.js"></script>
 </body>
 </html>
+```
+
+---
+
+## ポイント
+
+- `disabled` 属性を初期状態で付与しておく
+- 獲得履歴が1件以上ある場合にのみ有効化する処理は JS側 (`render()`) で行う（03 JS実装参照）
