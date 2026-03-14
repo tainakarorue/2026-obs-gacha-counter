@@ -331,7 +331,7 @@ function buildTweetText() {
   });
 
   text += '\n#ゲーム名 #キャラ名';
-  text += '\nガチャカウンターで記録中 → https://example.com';
+  text += '\nガチャカウンターで記録中 → https://2026-obs-gacha-counter.vercel.app';
 
   return text;
 }
